@@ -84,21 +84,6 @@ class Protocol(object):
 
     def send(self, channel, message):
 
-        # FIXME: Avoid constant queue declaration.  Or at least try to
-        # minimize its impact to system.
-        queue = self.get_queue_name(channel)
-        self.amqp_channel.queue_declare(
-            partial(self.publish_message, channel, message),
-            queue=queue,
-            passive=True if '!' in channel or '?' in channel else False,
-            arguments={'x-dead-letter-exchange': self.dead_letters},
-        )
-
-    def publish_message(self, channel, message, method_frame):
-
-        if method_frame.method.message_count >= self.capacity:
-            self.resolve.set_exception(RabbitmqChannelLayer.ChannelFull())
-            return
         queue = self.get_queue_name(channel)
         body = self.serialize(message)
         self.amqp_channel.basic_publish(
